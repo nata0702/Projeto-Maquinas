@@ -38,17 +38,17 @@ int TaDentro(float x, float y)
 int RoboDentro(Rectangle robo)
 {
     // centro de cada lado
-    float cimaX = robo.x + robo.width;
+    float cimaX = robo.x + robo.width/2;
     float cimaY = robo.y;
 
     float direitaX = robo.x + robo.width;
-    float direitaY = robo.y + robo.height;
+    float direitaY = robo.y + robo.height/2;
 
-    float baixoX = robo.x +robo.width;
+    float baixoX = robo.x + robo.width/2;
     float baixoY = robo.y + robo.height;
 
     float esquerdaX = robo.x;
-    float esquerdaY = robo.y + robo.height;
+    float esquerdaY = robo.y + robo.height/2;
 
     if(TaDentro(cimaX, cimaY))
         return 1;
@@ -63,7 +63,7 @@ int RoboDentro(Rectangle robo)
         return 4;
 
     return 0;
-}
+};
 
 
 void DesenharParedes()
@@ -80,17 +80,26 @@ void DesenharParedes()
                     tamanhoCelula,
                     tamanhoCelula,
                     WHITE
-                );
+                );    
             }
+            if(MatrizMapa[y][x]==2)
+            {
+                DrawRectangle(
+                x * tamanhoCelula,
+                y * tamanhoCelula,
+                tamanhoCelula,
+                tamanhoCelula,
+                GREEN
+                );
+            };
         }
     }
-}
-
+};
 
 
 void DefinirMatriz()
 {
-    // tudo parede
+    
     for(int y = 0; y < LINHAS; y++)
     {
         for(int x = 0; x < COLUNAS; x++)
@@ -125,7 +134,7 @@ void DefinirMatriz()
         centroY[i] = y + altura/2;
     }
 
-    // liga os cômodos
+    
     for(int i = 0; i < NUM_COMODOS-1; i++)
     {
         int x1 = centroX[i];
@@ -134,7 +143,7 @@ void DefinirMatriz()
         int x2 = centroX[i+1];
         int y2 = centroY[i+1];
 
-        // corredor horizontal
+        
         int inicio = (x1 < x2) ? x1 : x2;
         int fim    = (x1 < x2) ? x2 : x1;
 
@@ -143,7 +152,7 @@ void DefinirMatriz()
             MatrizMapa[y1][x] = 0;
         }
 
-        // corredor vertical
+       
         inicio = (y1 < y2) ? y1 : y2;
         fim    = (y1 < y2) ? y2 : y1;
 
@@ -152,9 +161,43 @@ void DefinirMatriz()
             MatrizMapa[y][x2] = 0;
         }
     }
+};
+ 
+
+void DestacarMouse(Camera2D camera)
+{
+    static int ultimaLinha = -1;
+    static int ultimaColuna = -1;
+
+    // volta a célula antiga para 0
+    if(ultimaLinha != -1 &&
+       MatrizMapa[ultimaLinha][ultimaColuna] == 2)
+    {
+        MatrizMapa[ultimaLinha][ultimaColuna] = 0;
+    }
+
+    Vector2 mouseMundo = GetScreenToWorld2D(GetMousePosition(), camera);
+
+    int coluna = mouseMundo.x / tamanhoCelula;
+    int linha  = mouseMundo.y / tamanhoCelula;
+
+    if(linha >= 0 && linha < LINHAS &&
+       coluna >= 0 && coluna < COLUNAS)
+    {
+        if(MatrizMapa[linha][coluna] == 0)
+        {
+            MatrizMapa[linha][coluna] = 2;
+
+            ultimaLinha = linha;
+            ultimaColuna = coluna;
+        }
+        else
+        {
+            ultimaLinha = -1;
+            ultimaColuna = -1;
+        }
+    }
 }
-     
-     
 
 
 void DesenharGrades()
@@ -185,48 +228,41 @@ class Robo{
 
 
     void update(){
-    
-        if(RoboDentro(Corpo)==0){
-                dt = GetFrameTime();
-            if(pos.x<5000-largura && pos.x>0){
-                pos.x+=velocidade*dir.x*dt;
-            }
-            else{
-                pos.x-=velocidade*dir.x*dt;
-                dir.x*=-1;
-            }
-            
-            if(pos.y>0 && pos.y<5000-largura){
-                pos.y+=velocidade*dir.y*dt;
-            }
-            else{
-                pos.y-=velocidade*dir.y*dt;
-                dir.y*=-1;
-            }
-        }
-        else if(RoboDentro(Corpo)==1){
-            pos.y-=velocidade*dt*dir.y;
-            dir.y*=-1;
-        }
-         else if(RoboDentro(Corpo)==2){
-            pos.x-=velocidade*dt*dir.x;
-            dir.x*=-1;
-        }
-         else if(RoboDentro(Corpo)==3){
-            pos.y-=velocidade*dt*dir.y;
-            dir.y*=-1;
-        }
-        else if(RoboDentro(Corpo)==4){
-            pos.x-=velocidade*dt*dir.x;
-            dir.x*=-1;
+        dt = GetFrameTime();
+
+        float dx = 0;
+        float dy = 0;
+
+        if(IsKeyDown(KEY_D)) dx += velocidade * dt;
+        if(IsKeyDown(KEY_A)) dx -= velocidade * dt;
+        if(IsKeyDown(KEY_S)) dy += velocidade * dt;
+        if(IsKeyDown(KEY_W)) dy -= velocidade * dt;
+
+        // Movimento em X
+        pos.x += dx;
+        Corpo.x = pos.x;
+
+        if(RoboDentro(Corpo) != 0)
+        {
+            pos.x -= dx;
+            Corpo.x = pos.x;
         }
 
-        printf("\n dir.y = %f\n dir.x = %f", dir.y, dir.x);
-        
-        
-        Corpo.x=pos.x;
-        Corpo.y=pos.y;
-    }
+        // Movimento em Y
+        pos.y += dy;
+        Corpo.y = pos.y;
+
+        if(RoboDentro(Corpo) != 0)
+        {
+            pos.y -= dy;
+            Corpo.y = pos.y;
+        }
+
+        Corpo.x = pos.x;
+        Corpo.y = pos.y;
+        }
+    
+       
 
 };
 
@@ -253,7 +289,7 @@ int main(void)
     RoboDeCarga.altura=20.0f;
     RoboDeCarga.largura=20.0f;
     RoboDeCarga.angulo= GetRandomValue(0, 10000) / 10000.0f * 2 * PI;
-    RoboDeCarga.velocidade=500;
+    RoboDeCarga.velocidade=300;
     RoboDeCarga.dir={cos(RoboDeCarga.angulo),-sin(RoboDeCarga.angulo)};
 
     do{
@@ -285,47 +321,53 @@ int main(void)
 
 
   
-
+    camera.target.x=RoboDeCarga.pos.x;
+    camera.target.y=RoboDeCarga.pos.y;
    
     
     //loop do jogo
     while(!WindowShouldClose()){
-    float velocidadeCamera = 500.0f;
-    float dt = GetFrameTime();
-    float tempo =+ dt;
+        float velocidadeCamera = 300.0f;
+        float velocidadeZoom = 3.0f;
+        float dt = GetFrameTime();
+        float tempo =+ dt;
+
+
+        
+        
+        if(IsKeyDown(KEY_UP) && camera.zoom<3){
+            camera.zoom+=velocidadeZoom*dt;
+        }
+        if(IsKeyDown(KEY_DOWN) && camera.zoom>0.3){
+            camera.zoom-=velocidadeZoom*dt;
+        }
 
 
 
-
-    if(IsKeyDown(KEY_SPACE)){
-        camera.target.x=RoboDeCarga.pos.x;
-        camera.target.y=RoboDeCarga.pos.y;
-        estado=1;
-    }
+        if(IsKeyDown(KEY_SPACE)){
+            estado=1;
+        }
 
 
-    if(IsKeyDown(KEY_D))
-        camera.target.x += velocidadeCamera * dt;
 
-    if(IsKeyDown(KEY_A))
-        camera.target.x -= velocidadeCamera * dt;
-
-    if(IsKeyDown(KEY_W))
-        camera.target.y -= velocidadeCamera * dt;
-
-    if(IsKeyDown(KEY_S))
-        camera.target.y += velocidadeCamera * dt;
-    
-    if(IsKeyDown(KEY_UP) && camera.zoom<2)
-        camera.zoom += 1.0f*dt;
-
-    if(IsKeyDown(KEY_DOWN) && camera.zoom>0.2)
-        camera.zoom -= 1.0f*dt;
-
-    
 
 
         if(estado==0){
+            //funcao que recebe a posicao do mouse, o vetor mapa ja definido, 
+            DestacarMouse(camera);
+            if(IsKeyDown(KEY_W)){
+                camera.target.y-=velocidadeCamera*dt;
+            }
+            if(IsKeyDown(KEY_A)){
+                camera.target.x-=velocidadeCamera*dt;
+            }
+            if(IsKeyDown(KEY_S)){
+                camera.target.y+=velocidadeCamera*dt;
+            }
+            if(IsKeyDown(KEY_D)){
+                camera.target.x+=velocidadeCamera*dt;
+            }
+
             BeginDrawing();
 
             ClearBackground(BLACK);
@@ -344,6 +386,8 @@ int main(void)
         }
         
         if(estado==1){
+            camera.target.x=RoboDeCarga.pos.x;
+            camera.target.y=RoboDeCarga.pos.y;
             RoboDeCarga.update();
             BeginDrawing();
 
