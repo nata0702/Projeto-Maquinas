@@ -1,4 +1,4 @@
-# Raylib-CPP Starter Template for VS Code
+# Projeto Maquinas
 
 ![Language](https://img.shields.io/badge/language-C%2B%2B-brightgreen)
 ![Raylib](https://img.shields.io/badge/raylib-6.0-00d4aa)
